@@ -143,8 +143,8 @@ module VX_issue #(
             perf_fpu_stalls <= 0;
         `endif
         end else begin
-            if (decode_if.valid & !decode_if.ready) begin
-                perf_ibf_stalls <= perf_ibf_stalls  + 44'd1;
+            if (ibuf_deq_if.valid && ibuf_deq_if.ready) begin
+                perf_ibf_stalls <= 44'($countones(ibuf_deq_if.tmask));
             end
             if (ibuf_deq_if.valid & scoreboard_delay) begin 
                 perf_scb_stalls <= perf_scb_stalls  + 44'd1;

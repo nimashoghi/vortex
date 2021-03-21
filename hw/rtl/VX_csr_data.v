@@ -37,7 +37,11 @@ module VX_csr_data #(
     reg [`CSR_WIDTH-1:0] csr_pmpaddr [0:0];
     reg [63:0] csr_cycle;
     reg [63:0] csr_instret;
-    
+
+`ifdef PERF_ENABLE
+    reg [63:0] thread_count;
+`endif
+
     reg [`NUM_WARPS-1:0][`FRM_BITS+`FFG_BITS-1:0] fcsr;
 
     reg [31:0] read_data_r;
@@ -83,9 +87,15 @@ module VX_csr_data #(
        if (reset) begin
             csr_cycle   <= 0;
             csr_instret <= 0;
+`ifdef PERF_ENABLE
+            thread_count <= 0;
+`endif
         end else begin
             if (busy) begin
                 csr_cycle <= csr_cycle + 1;
+`ifdef PERF_ENABLE
+                thread_count <= thread_count + 64'(perf_pipeline_if.ibf_stalls);
+`endif
             end
             if (cmt_to_csr_if.valid) begin
                 csr_instret <= csr_instret + 64'(cmt_to_csr_if.commit_size);
@@ -113,8 +123,8 @@ module VX_csr_data #(
             
         `ifdef PERF_ENABLE
             // PERF: pipeline
-            `CSR_MPM_IBUF_ST    : read_data_r = perf_pipeline_if.ibf_stalls[31:0];
-            `CSR_MPM_IBUF_ST_H  : read_data_r = 32'(perf_pipeline_if.ibf_stalls[43:32]);
+            `CSR_MPM_IBUF_ST    : read_data_r = thread_count[31:0];
+            `CSR_MPM_IBUF_ST_H  : read_data_r = 32'(thread_count[63:32]);
             `CSR_MPM_SCRB_ST    : read_data_r = perf_pipeline_if.scb_stalls[31:0];
             `CSR_MPM_SCRB_ST_H  : read_data_r = 32'(perf_pipeline_if.scb_stalls[43:32]);
             `CSR_MPM_ALU_ST     : read_data_r = perf_pipeline_if.alu_stalls[31:0];
